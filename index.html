@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS Daily Tracker</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f8fa;--surface:#fff;--surface2:#f1f3f7;--border:#e2e5eb;
+  --text:#1a1d23;--muted:#6b7280;--hint:#9ca3af;
+  --green:#16a34a;--green-bg:#f0fdf4;--green-border:#bbf7d0;
+  --red:#dc2626;--red-bg:#fef2f2;--red-border:#fecaca;
+  --amber:#b45309;--amber-bg:#fffbeb;--amber-border:#fde68a;
+  --blue:#2563eb;--blue-bg:#eff6ff;--blue-border:#bfdbfe;
+  --accent:#2563eb;--radius:10px;--radius-sm:6px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10}
+.brand{display:flex;align-items:center;gap:8px}
+.brand-dot{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+.brand h1{font-size:15px;font-weight:600}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+input[type="date"]{font-size:13px;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;outline:none}
+input[type="date"]:focus{border-color:var(--accent)}
+.badge-editing{font-size:11px;font-weight:600;color:var(--amber);background:var(--amber-bg);border:1px solid var(--amber-border);padding:3px 8px;border-radius:20px;display:none}
+.badge-editing.show{display:inline-block}
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:0}
+.tab{padding:10px 16px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;user-select:none}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+main{max-width:900px;margin:0 auto;padding:20px}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+.section-head{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.section-icon{font-size:15px}
+.metric-row{display:grid;grid-template-columns:1fr 110px 90px;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:none}
+.metric-label{font-size:13px;color:var(--text)}
+.metric-sub{font-size:11px;color:var(--hint);margin-top:1px}
+.metric-input{width:100%;font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;text-align:right;outline:none;background:var(--surface);-moz-appearance:textfield}
+.metric-input::-webkit-inner-spin-button,.metric-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.metric-input:focus{border-color:var(--accent)}
+.metric-input[readonly]{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue);cursor:default}
+.metric-avg{font-size:12px;font-weight:600;padding:4px 8px;border-radius:var(--radius-sm);text-align:center;min-width:80px}
+.avg-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.avg-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.avg-neutral{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+button{font-size:13px;font-weight:500;padding:8px 14px;border-radius:var(--radius-sm);border:1px solid transparent;cursor:pointer;font-family:inherit;transition:opacity .15s}
+button:hover{opacity:.85}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-secondary{background:var(--surface);color:var(--text);border-color:var(--border)}
+.btn-green{background:var(--green);color:#fff}
+.btn-red{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+.btn-sm{padding:5px 10px;font-size:12px}
+/* Goal config */
+.goal-config{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.goal-config label{font-size:13px;color:var(--muted)}
+.goal-config input{width:80px;font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;text-align:center;outline:none;-moz-appearance:textfield}
+.goal-config input::-webkit-inner-spin-button,.goal-config input::-webkit-outer-spin-button{-webkit-appearance:none}
+/* Toast */
+#toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;color:#fff;background:#1a1d23;opacity:0;transition:opacity .25s;pointer-events:none;z-index:100}
+#toast.show{opacity:1}
+/* Report modal */
+#report-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:center;justify-content:center;padding:16px}
+#report-backdrop.open{display:flex}
+#report-modal{background:#1a1d23;border-radius:14px;width:100%;max-width:780px;max-height:92vh;overflow-y:auto;padding:20px;color:#fff}
+.report-title{font-size:18px;font-weight:700;letter-spacing:.01em;margin-bottom:2px}
+.report-date{font-size:12px;color:#9ca3af;margin-bottom:14px}
+.report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-bottom:6px}
+.report-card{background:#2d3139;border-radius:7px;padding:8px 10px}
+.report-card-label{font-size:10px;font-weight:500;color:#9ca3af;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.report-card-val{font-size:20px;font-weight:700}
+.report-card-val.rg{color:#4ade80}
+.report-card-val.rr{color:#f87171}
+.report-card-val.rn{color:#fff}
+.report-section-head{font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 5px;display:flex;align-items:center;gap:5px}
+.report-footer{font-size:10px;color:#4b5563;text-align:center;margin-top:12px;padding-top:10px;border-top:1px solid #374151}
+.report-close-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+/* Compare tab */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.compare-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.compare-col-head{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.compare-col-head input[type="date"]{flex:1}
+.compare-item{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.compare-item:last-child{border-bottom:none}
+.compare-label{color:var(--muted)}
+.compare-val{font-weight:600}
+.diff-up{color:var(--green);font-size:11px;margin-left:4px}
+.diff-dn{color:var(--red);font-size:11px;margin-left:4px}
+/* Summary tab */
+.summary-controls{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.period-pills{display:flex;gap:6px}
+.period-pill{padding:6px 12px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--muted);transition:all .15s}
+.period-pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.summary-stat{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center}
+.stat-card-val{font-size:22px;font-weight:700;color:var(--accent)}
+.stat-card-label{font-size:11px;color:var(--muted);margin-top:2px}
+.summary-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.summary-table table{width:100%;border-collapse:collapse}
+.summary-table th{padding:8px 12px;background:var(--surface2);font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:left}
+.summary-table td{padding:8px 12px;border-top:1px solid var(--border);font-size:13px}
+.summary-table td:not(:first-child){text-align:right;font-weight:500}
+@media(max-width:600px){
+  .compare-grid{grid-template-columns:1fr}
+  .report-grid{grid-template-columns:1fr}
+  .metric-row{grid-template-columns:1fr 90px 70px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <h1>CS Daily Tracker</h1>
+  </div>
+  <div class="toolbar">
+    <span class="badge-editing" id="edit-badge">Editing past entry</span>
+    <input type="date" id="entry-date" onchange="onDateChange()">
+    <button class="btn-secondary btn-sm" onclick="undoEntry()">↩ Undo</button>
+    <button class="btn-green btn-sm" onclick="openReportModal('yesterday')">📋 Yesterday</button>
+    <button class="btn-green btn-sm" onclick="openReportModal('today')">📋 Today</button>
+  </div>
+</header>
+
+<nav>
+  <div class="tab active" onclick="switchTab('entry')">Daily Entry</div>
+  <div class="tab" onclick="switchTab('compare')">Compare</div>
+  <div class="tab" onclick="switchTab('summary')">Summary</div>
+</nav>
+
+<main>
+
+<!-- DAILY ENTRY TAB -->
+<div class="tab-panel active" id="tab-entry">
+
+  <div class="goal-config" style="flex-direction:column;align-items:flex-start;gap:8px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%">
+      <label style="white-space:nowrap">📣 Slack Webhook URL:</label>
+      <input type="text" id="slack-webhook-input" placeholder="https://hooks.slack.com/triggers/..." oninput="saveWebhook()"
+        style="flex:1;min-width:260px;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;outline:none;color:var(--text)">
+      <span id="webhook-status" style="font-size:12px;color:var(--muted)">Not configured</span>
+    </div>
+    <div style="font-size:11px;color:var(--hint)">Paste your Slack Workflow webhook URL. The report will post automatically when you save a day.</div>
+  </div>
+
+  <div class="goal-config">
+    <label>Daily review goal:</label>
+    <input type="number" id="review-goal-input" value="200" min="1" oninput="saveGoal()">
+    <span style="font-size:12px;color:var(--muted)">Used for Reviews Goal % coloring</span>
+  </div>
+
+  <!-- Email -->
+  <div class="section">
+    <div class="section-head"><span class="section-icon">📧</span> Email</div>
+    <div class="metric-row">
+      <div><div class="metric-label">Emails Received</div></div>
+      <input class="metric-input" type="number" id="emails_received" oninput="onInput('emails_received')">
+      <div class="metric-avg avg-neutral" id="avg_emails_received">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Emails Resolved</div></div>
+      <input class="metric-input" type="number" id="emails_resolved" oninput="onInput('emails_resolved')">
+      <div class="metric-avg avg-neutral" id="avg_emails_resolved">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Unresolved Emails</div></div>
+      <input class="metric-input" type="number" id="emails_unresolved" oninput="onInput('emails_unresolved')">
+      <div class="metric-avg avg-neutral" id="avg_emails_unresolved">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Email SLA %</div><div class="metric-sub">From Freshdesk</div></div>
+      <input class="metric-input" type="number" id="email_sla" oninput="onInput('email_sla')">
+      <div class="metric-avg avg-neutral" id="avg_email_sla">—</div>
+    </div>
+  </div>
+
+  <!-- Calls -->
+  <div class="section">
+    <div class="section-head"><span class="section-icon">📞</span> Calls</div>
+    <div class="metric-row">
+      <div><div class="metric-label">Inbound Calls</div></div>
+      <input class="metric-input" type="number" id="calls_inbound" oninput="onInput('calls_inbound')">
+      <div class="metric-avg avg-neutral" id="avg_calls_inbound">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Outbound Calls</div></div>
+      <input class="metric-input" type="number" id="calls_outbound" oninput="onInput('calls_outbound')">
+      <div class="metric-avg avg-neutral" id="avg_calls_outbound">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Total Calls</div><div class="metric-sub">Auto-calculated</div></div>
+      <input class="metric-input" type="text" id="calls_total" readonly>
+      <div class="metric-avg avg-neutral" id="avg_calls_total">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Missed (Work Hours)</div></div>
+      <input class="metric-input" type="number" id="calls_missed_work" oninput="onInput('calls_missed_work')">
+      <div class="metric-avg avg-neutral" id="avg_calls_missed_work">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Missed (After Hours)</div></div>
+      <input class="metric-input" type="number" id="calls_missed_after" oninput="onInput('calls_missed_after')">
+      <div class="metric-avg avg-neutral" id="avg_calls_missed_after">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Missed Calls Worked</div><div class="metric-sub">Not included in SLA</div></div>
+      <input class="metric-input" type="number" id="calls_missed_worked" oninput="onInput('calls_missed_worked')">
+      <div class="metric-avg avg-neutral" id="avg_calls_missed_worked">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Calls SLA %</div><div class="metric-sub">From RingCentral</div></div>
+      <input class="metric-input" type="number" id="calls_sla" oninput="onInput('calls_sla')">
+      <div class="metric-avg avg-neutral" id="avg_calls_sla">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Avg Handle Time (min)</div></div>
+      <input class="metric-input" type="number" id="calls_aht" oninput="onInput('calls_aht')">
+      <div class="metric-avg avg-neutral" id="avg_calls_aht">—</div>
+    </div>
+  </div>
+
+  <!-- Saves & Cancels -->
+  <div class="section">
+    <div class="section-head"><span class="section-icon">💰</span> Saves &amp; Cancellations</div>
+    <div class="metric-row">
+      <div><div class="metric-label">Cancellations</div></div>
+      <input class="metric-input" type="number" id="saves_cancels" oninput="onInput('saves_cancels')">
+      <div class="metric-avg avg-neutral" id="avg_saves_cancels">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Saved Sales</div></div>
+      <input class="metric-input" type="number" id="saves_saved" oninput="onInput('saves_saved')">
+      <div class="metric-avg avg-neutral" id="avg_saves_saved">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Save Rate %</div><div class="metric-sub">Auto-calculated</div></div>
+      <input class="metric-input" type="text" id="saves_rate" readonly>
+      <div class="metric-avg avg-neutral" id="avg_saves_rate">—</div>
+    </div>
+  </div>
+
+  <!-- Reviews -->
+  <div class="section">
+    <div class="section-head"><span class="section-icon">⭐</span> Reviews</div>
+    <div class="metric-row">
+      <div><div class="metric-label">Reviews Answered</div></div>
+      <input class="metric-input" type="number" id="reviews_answered" oninput="onInput('reviews_answered')">
+      <div class="metric-avg avg-neutral" id="avg_reviews_answered">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Reviews Goal %</div><div class="metric-sub">Auto-calculated vs daily goal</div></div>
+      <input class="metric-input" type="text" id="reviews_goal_pct" readonly>
+      <div class="metric-avg avg-neutral" id="avg_reviews_goal_pct">—</div>
+    </div>
+  </div>
+
+  <!-- Returns -->
+  <div class="section">
+    <div class="section-head"><span class="section-icon">📦</span> Returns</div>
+    <div class="metric-row">
+      <div><div class="metric-label">Returns Completed</div></div>
+      <input class="metric-input" type="number" id="returns_completed" oninput="onInput('returns_completed')">
+      <div class="metric-avg avg-neutral" id="avg_returns_completed">—</div>
+    </div>
+  </div>
+
+  <!-- Disputes -->
+  <div class="section">
+    <div class="section-head"><span class="section-icon">⚖️</span> Disputes</div>
+    <div class="metric-row">
+      <div><div class="metric-label">Disputes Open</div></div>
+      <input class="metric-input" type="number" id="disputes_open" oninput="onInput('disputes_open')">
+      <div class="metric-avg avg-neutral" id="avg_disputes_open">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Disputes Won</div></div>
+      <input class="metric-input" type="number" id="disputes_won" oninput="onInput('disputes_won')">
+      <div class="metric-avg avg-neutral" id="avg_disputes_won">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Disputes Lost</div></div>
+      <input class="metric-input" type="number" id="disputes_lost" oninput="onInput('disputes_lost')">
+      <div class="metric-avg avg-neutral" id="avg_disputes_lost">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Approval Rate %</div><div class="metric-sub">Auto-calculated</div></div>
+      <input class="metric-input" type="text" id="disputes_approval" readonly>
+      <div class="metric-avg avg-neutral" id="avg_disputes_approval">—</div>
+    </div>
+  </div>
+
+  <!-- Dunning -->
+  <div class="section">
+    <div class="section-head"><span class="section-icon">🔔</span> Dunning</div>
+    <div class="metric-row">
+      <div><div class="metric-label">Dunning Attempts</div></div>
+      <input class="metric-input" type="number" id="dunning_attempts" oninput="onInput('dunning_attempts')">
+      <div class="metric-avg avg-neutral" id="avg_dunning_attempts">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Dunning Saves</div></div>
+      <input class="metric-input" type="number" id="dunning_saves" oninput="onInput('dunning_saves')">
+      <div class="metric-avg avg-neutral" id="avg_dunning_saves">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Dunning Save Rate %</div><div class="metric-sub">Auto-calc · goal ≥ 80%</div></div>
+      <input class="metric-input" type="text" id="dunning_rate" readonly>
+      <div class="metric-avg avg-neutral" id="avg_dunning_rate">—</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" onclick="saveEntry()">Save Day</button>
+    <button class="btn-secondary" onclick="clearForm()">Clear</button>
+    <button class="btn-secondary" onclick="copyRowanReport()" style="background:#1a1d23;color:#fff;border-color:#1a1d23">📋 Copy Rowan's Report</button>
+  </div>
+</div>
+
+<!-- COMPARE TAB -->
+<div class="tab-panel" id="tab-compare">
+  <div class="compare-grid">
+    <div class="compare-col">
+      <div class="compare-col-head">
+        <span style="font-size:12px;font-weight:600;color:var(--muted)">Date A</span>
+        <input type="date" id="cmp-a" onchange="renderCompare()">
+      </div>
+      <div id="cmp-col-a"></div>
+    </div>
+    <div class="compare-col">
+      <div class="compare-col-head">
+        <span style="font-size:12px;font-weight:600;color:var(--muted)">Date B</span>
+        <input type="date" id="cmp-b" onchange="renderCompare()">
+      </div>
+      <div id="cmp-col-b"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY TAB -->
+<div class="tab-panel" id="tab-summary">
+  <div class="summary-controls">
+    <div class="period-pills">
+      <div class="period-pill active" onclick="setPeriod('week')">This Week</div>
+      <div class="period-pill" onclick="setPeriod('month')">This Month</div>
+      <div class="period-pill" onclick="setPeriod('year')">This Year</div>
+      <div class="period-pill" onclick="setPeriod('all')">All Time</div>
+    </div>
+    <button class="btn-green btn-sm" onclick="openSummaryReport()">📋 Print report</button>
+  </div>
+  <div class="summary-stat" id="summary-stats"></div>
+  <div class="summary-table" id="summary-table"></div>
+</div>
+
+</main>
+
+<!-- Report Modal -->
+<div id="report-backdrop" onclick="if(event.target===this)closeReport()">
+  <div id="report-modal">
+    <div class="report-close-row">
+      <div id="report-header-title" style="font-size:18px;font-weight:700;color:#fff"></div>
+      <button class="btn-secondary btn-sm" onclick="closeReport()">✕ Close</button>
+    </div>
+    <div id="report-content"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Fields definition ──────────────────────────────────────────────────────
+const FIELDS = [
+  {id:'emails_received',label:'Emails Received',section:'Email',lowerIsBetter:false},
+  {id:'emails_resolved',label:'Emails Resolved',section:'Email',lowerIsBetter:false},
+  {id:'emails_unresolved',label:'Unresolved Emails',section:'Email',lowerIsBetter:true},
+  {id:'email_sla',label:'Email SLA %',section:'Email',lowerIsBetter:false,pct:true},
+  {id:'calls_inbound',label:'Inbound Calls',section:'Calls',lowerIsBetter:false},
+  {id:'calls_outbound',label:'Outbound Calls',section:'Calls',lowerIsBetter:false},
+  {id:'calls_total',label:'Total Calls',section:'Calls',lowerIsBetter:false,auto:true},
+  {id:'calls_missed_work',label:'Missed (Work Hrs)',section:'Calls',lowerIsBetter:true},
+  {id:'calls_missed_after',label:'Missed (After Hrs)',section:'Calls',lowerIsBetter:true},
+  {id:'calls_missed_worked',label:'Missed Calls Worked',section:'Calls',lowerIsBetter:false},
+  {id:'calls_sla',label:'Calls SLA %',section:'Calls',lowerIsBetter:false,pct:true},
+  {id:'calls_aht',label:'Avg Handle Time',section:'Calls',lowerIsBetter:true,suffix:' min'},
+  {id:'saves_cancels',label:'Cancellations',section:'Saves',lowerIsBetter:true},
+  {id:'saves_saved',label:'Saved Sales',section:'Saves',lowerIsBetter:false},
+  {id:'saves_rate',label:'Save Rate %',section:'Saves',lowerIsBetter:false,pct:true,auto:true},
+  {id:'reviews_answered',label:'Reviews Answered',section:'Reviews',lowerIsBetter:false},
+  {id:'reviews_goal_pct',label:'Reviews Goal %',section:'Reviews',lowerIsBetter:false,pct:true,auto:true},
+  {id:'returns_completed',label:'Returns Completed',section:'Returns',lowerIsBetter:false},
+  {id:'disputes_open',label:'Disputes Open',section:'Disputes',lowerIsBetter:true},
+  {id:'disputes_won',label:'Disputes Won',section:'Disputes',lowerIsBetter:false},
+  {id:'disputes_lost',label:'Disputes Lost',section:'Disputes',lowerIsBetter:true},
+  {id:'disputes_approval',label:'Approval Rate %',section:'Disputes',lowerIsBetter:false,pct:true,auto:true},
+  {id:'dunning_attempts',label:'Dunning Attempts',section:'Dunning',lowerIsBetter:false},
+  {id:'dunning_saves',label:'Dunning Saves',section:'Dunning',lowerIsBetter:false},
+  {id:'dunning_rate',label:'Dunning Save Rate %',section:'Dunning',lowerIsBetter:false,pct:true,auto:true},
+];
+
+// ── State ──────────────────────────────────────────────────────────────────
+let undoSnapshot = null;
+let currentPeriod = 'week';
+
+function today() { return new Date().toISOString().slice(0,10); }
+function yesterday() {
+  const d = new Date(); d.setDate(d.getDate()-1);
+  return d.toISOString().slice(0,10);
+}
+function formatDate(ds) {
+  if(!ds) return '—';
+  const [y,m,d] = ds.split('-');
+  return new Date(y,m-1,d).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
+}
+
+// ── localStorage helpers ───────────────────────────────────────────────────
+function loadHistory() { try { return JSON.parse(localStorage.getItem('cs_history')||'[]'); } catch { return []; } }
+function saveHistory(h) { localStorage.setItem('cs_history',JSON.stringify(h)); }
+function loadGoal() { return parseInt(localStorage.getItem('cs_review_goal')||'200',10); }
+function saveGoal() {
+  const v = parseInt(document.getElementById('review-goal-input').value,10);
+  if(v>0) { localStorage.setItem('cs_review_goal',v); recalcAuto(); updateAvgs(); }
+}
+
+// ── Auto-calc ──────────────────────────────────────────────────────────────
+function recalcAuto() {
+  const g = id => parseFloat(document.getElementById(id)?.value)||0;
+  const goal = loadGoal();
+
+  // Calls total
+  const inb=g('calls_inbound'), out=g('calls_outbound');
+  const tot = (inb||out) ? inb+out : null;
+  setReadonly('calls_total', tot);
+
+  // Save rate
+  const canc=g('saves_cancels'), saved=g('saves_saved');
+  const sr = canc>0 ? saved/canc*100 : null;
+  setReadonly('saves_rate', sr, '%');
+
+  // Reviews goal %
+  const rev=g('reviews_answered');
+  const rgp = rev>0 && goal>0 ? rev/goal*100 : null;
+  // Color reviews_goal_pct: green if ≥100%
+  const rgEl = document.getElementById('reviews_goal_pct');
+  if(rgEl){
+    rgEl.value = rgp!==null ? rgp.toFixed(1)+'%' : '';
+    if(rgp!==null){
+      rgEl.style.color = rgp>=100 ? 'var(--green)' : 'var(--red)';
+      rgEl.style.fontWeight = '600';
+    } else { rgEl.style.color=''; rgEl.style.fontWeight=''; }
+  }
+
+  // Disputes approval
+  const dw=g('disputes_won'), dl=g('disputes_lost');
+  const dar = (dw+dl)>0 ? dw/(dw+dl)*100 : null;
+  setReadonly('disputes_approval', dar, '%');
+
+  // Dunning rate
+  const da=g('dunning_attempts'), ds=g('dunning_saves');
+  const dr = da>0 ? ds/da*100 : null;
+  // Dunning: green if ≥80
+  const drEl = document.getElementById('dunning_rate');
+  if(drEl){
+    drEl.value = dr!==null ? dr.toFixed(1)+'%' : '';
+    if(dr!==null){
+      drEl.style.color = dr>=80 ? 'var(--green)' : 'var(--red)';
+      drEl.style.fontWeight = '600';
+    } else { drEl.style.color=''; drEl.style.fontWeight=''; }
+  }
+}
+
+function setReadonly(id, val, suffix='') {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.value = val!==null ? (suffix==='%' ? val.toFixed(1)+'%' : (val%1===0?val.toFixed(0):val.toFixed(1))+suffix) : '';
+}
+
+// ── Input handler ──────────────────────────────────────────────────────────
+function onInput(id) {
+  recalcAuto();
+  updateAvgs();
+}
+
+// ── Averages ───────────────────────────────────────────────────────────────
+function updateAvgs() {
+  const history = loadHistory();
+  const curDate = document.getElementById('entry-date').value;
+  // exclude current date from avg calculation
+  const past = history.filter(e => e._date !== curDate);
+
+  FIELDS.forEach(f => {
+    const el = document.getElementById('avg_'+f.id);
+    if(!el) return;
+    const vals = past.map(e=>parseFloat(e[f.id])).filter(v=>!isNaN(v));
+    if(vals.length===0){ el.className='metric-avg avg-neutral'; el.textContent='—'; return; }
+    const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+    const cur = parseFloat(document.getElementById(f.id)?.value);
+    const label = f.pct ? avg.toFixed(1)+'%' : (avg%1===0?avg.toFixed(0):avg.toFixed(1))+(f.suffix||'');
+    el.textContent = 'avg '+label;
+    if(isNaN(cur)){ el.className='metric-avg avg-neutral'; return; }
+    // color: green = doing well, red = doing poorly
+    const better = f.lowerIsBetter ? cur<=avg : cur>=avg;
+    el.className = 'metric-avg '+(better?'avg-green':'avg-red');
+  });
+}
+
+// ── Date change ────────────────────────────────────────────────────────────
+function onDateChange() {
+  const dt = document.getElementById('entry-date').value;
+  const isToday = dt === today();
+  document.getElementById('edit-badge').classList.toggle('show', !isToday);
+  loadEntryForDate(dt);
+}
+
+function loadEntryForDate(dt) {
+  const history = loadHistory();
+  const entry = history.find(e=>e._date===dt);
+  clearForm(false);
+  if(entry){
+    FIELDS.forEach(f=>{ if(!f.auto){ const el=document.getElementById(f.id); if(el) el.value=entry[f.id]??''; } });
+  }
+  recalcAuto();
+  updateAvgs();
+}
+
+// ── Save / Clear / Undo ────────────────────────────────────────────────────
+function saveEntry() {
+  const dt = document.getElementById('entry-date').value;
+  const history = loadHistory();
+  undoSnapshot = JSON.parse(JSON.stringify(history));
+  const entry = {_date: dt};
+  FIELDS.forEach(f=>{ if(!f.auto) entry[f.id] = document.getElementById(f.id)?.value||''; });
+  // store auto-calced values too for reporting
+  FIELDS.filter(f=>f.auto).forEach(f=>{ entry[f.id]=document.getElementById(f.id)?.value||''; });
+  const idx = history.findIndex(e=>e._date===dt);
+  if(idx>=0) history[idx]=entry; else history.push(entry);
+  history.sort((a,b)=>a._date.localeCompare(b._date));
+  saveHistory(history);
+  updateAvgs();
+  showToast('Saved for '+formatDate(dt),'green');
+  if(currentPeriod) renderSummary();
+}
+
+function clearForm(resetDate=true) {
+  FIELDS.forEach(f=>{ const el=document.getElementById(f.id); if(el){ el.value=''; el.style.color=''; el.style.fontWeight=''; } });
+  if(resetDate){
+    document.getElementById('entry-date').value=today();
+    document.getElementById('edit-badge').classList.remove('show');
+  }
+  updateAvgs();
+}
+
+function undoEntry() {
+  if(!undoSnapshot){ showToast('Nothing to undo','red'); return; }
+  saveHistory(undoSnapshot);
+  undoSnapshot=null;
+  loadEntryForDate(document.getElementById('entry-date').value);
+  showToast('Undo successful','green');
+}
+
+function loadWebhook() { return localStorage.getItem('cs_slack_webhook')||''; }
+function saveWebhook() {
+  const v = document.getElementById('slack-webhook-input').value.trim();
+  localStorage.setItem('cs_slack_webhook', v);
+  updateWebhookStatus(v);
+}
+function updateWebhookStatus(url) {
+  const el = document.getElementById('webhook-status');
+  if(url && url.startsWith('https://hooks.slack.com/')) {
+    el.textContent = '✅ Configured'; el.style.color = 'var(--green)';
+  } else if(url) {
+    el.textContent = '⚠️ Invalid URL'; el.style.color = 'var(--amber)';
+  } else {
+    el.textContent = 'Not configured'; el.style.color = 'var(--muted)';
+  }
+}
+
+async function postToSlack(entry, dt) {
+  const url = loadWebhook();
+  if(!url || !url.startsWith('https://hooks.slack.com/')) return false;
+  const text = buildRowanText(entry, dt);
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ report_text: text })
+    });
+    return true;
+  } catch(err) {
+    return false;
+  }
+}
+
+function buildRowanText(entry, dt) {
+  const g = id => { const v=parseFloat(entry[id]); return isNaN(v)?'—':(v%1===0?v.toFixed(0):v.toFixed(1)); };
+  const gp = id => { const v=parseFloat(entry[id]); return isNaN(v)?'—':v.toFixed(1)+'%'; };
+  const intros = [
+    `dad is literally standing over my shoulder so here. numbers. you're welcome. 🙄`,
+    `i was in the middle of a really good ATEEZ video and had to pause it for THIS 😤`,
+    `i don't even get paid enough for this. actually i don't get paid at all. dad owes me so bad 💀`,
+    `my bed was calling me and i had to ignore it. for you people. hope you're happy 😐`,
+    `i was literally about to learn a new chord and now i have to do a report like some kind of adult 🎸`,
+    `stray kids dropped a new video today and i am being forced to do data entry instead of watching it 😭`,
+    `dad said "it'll take five minutes" IT HAS NEVER TAKEN FIVE MINUTES 🙃`,
+    `i could be horizontal right now. literally just lying there. living my best life. but no. 💅`,
+    `my phone was at 4% and i had to plug it in to send this. the sacrifices i make 😩`,
+    `mom is sitting right here watching me do this like it's a school project. it is not a school project. 😐`,
+    `fine. FINE. here are your little numbers. i hope they bring you joy because they bring me nothing. 🙄`,
+    `dad took the wifi password hostage again so here we are. doing capitalism. 😤`,
+    `mom told me to "use my time productively" so apparently this counts. ok. sure. 🙃`,
+    `i was in the middle of a very important ranking of my top 10 K-pop albums and THIS happened 💀`,
+    `dad literally texted me four times. FOUR. i was right there. he could have just walked in. 😤`,
+    `mom is making that face. you know the face. so here are the numbers before i have to hear about it. 💅`,
+  ];
+  const seed = new Date().getDate() + new Date().getMonth();
+  const intro = intros[seed % intros.length];
+
+  // Build roast based on comparison to historical averages
+  const history = loadHistory();
+  const past = history.filter(e => e._date !== dt);
+  const avg = id => {
+    const vals = past.map(e => parseFloat(e[id])).filter(v => !isNaN(v));
+    return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
+  };
+
+  // Only flag things that are significantly off (>10% worse than avg) or notably good (>10% better)
+  const majorStruggles = [];
+  const majorWins = [];
+
+  const checkMajor = (id, label, lowerIsBetter) => {
+    const cur = parseFloat(entry[id]);
+    const a = avg(id);
+    if(isNaN(cur) || a === null || a === 0) return;
+    const diff = (cur - a) / a; // positive = higher than avg
+    const significantlyWorse = lowerIsBetter ? diff > 0.10 : diff < -0.10;
+    const significantlyBetter = lowerIsBetter ? diff < -0.10 : diff > 0.10;
+    if(significantlyWorse) majorStruggles.push(label);
+    else if(significantlyBetter) majorWins.push(label);
+  };
+
+  checkMajor('email_sla', 'email SLA', false);
+  checkMajor('calls_sla', 'calls SLA', false);
+  checkMajor('saves_rate', 'save rate', false);
+  checkMajor('disputes_approval', 'dispute approval rate', false);
+  checkMajor('dunning_rate', 'dunning save rate', false);
+  checkMajor('emails_unresolved', 'unresolved emails', true);
+
+  const roastLines = [];
+  if(past.length === 0) {
+    roastLines.push(`_ok so no history yet so i literally cannot compare anything. day one. groundbreaking. 🙄_`);
+  } else if(majorStruggles.length === 0 && majorWins.length === 0) {
+    roastLines.push(`_tbh nothing is like majorly off today?? basically average across the board which is fine i guess 😐_`);
+  } else {
+    if(majorStruggles.length > 0) {
+      const list = majorStruggles.join(' + ');
+      const roasts = [
+        `_ok real talk ${list} is down bad rn like noticeably worse than usual… we should prob fix that 😬_`,
+        `_not to be that girl but ${list} is giving below average vibes and it's not cute 💀_`,
+        `_${list} needs to log off and think abt what it's done bc that's not it 😤_`,
+        `_just gonna say it… ${list} flopped today. like compared to normal. just flopped. 🙃_`,
+        `_someone needs to have a talk w ${list} bc the numbers are not it rn 😩_`,
+      ];
+      roastLines.push(roasts[seed % roasts.length]);
+    }
+    if(majorWins.length > 0) {
+      const list = majorWins.join(' + ');
+      const cheers = [
+        `_ngl ${list} actually went off today?? above average fr fr 💅_`,
+        `_ok ${list} said let's go and honestly respect. above avg. i see u 🌟_`,
+        `_${list} ate today no notes. better than usual and we love that for us ✨_`,
+      ];
+      roastLines.push(cheers[seed % cheers.length]);
+    }
+  }
+
+  return [
+    `📊 *CS Daily Report — ${formatDate(dt)}* 💁‍♀️  _from Rowan, reluctantly_`,
+    `${intro}`,
+    ``,
+    `📧 *Email*`,
+    `• Received: ${g('emails_received')}  |  Resolved: ${g('emails_resolved')}  |  Unresolved: ${g('emails_unresolved')}  |  SLA: ${gp('email_sla')}`,
+    ``,
+    `📞 *Calls*`,
+    `• Inbound: ${g('calls_inbound')}  |  Outbound: ${g('calls_outbound')}  |  Total: ${g('calls_total')}  |  SLA: ${gp('calls_sla')}`,
+    `• Missed (Work): ${g('calls_missed_work')}  |  Missed (After): ${g('calls_missed_after')}  |  Missed Worked: ${g('calls_missed_worked')}  |  AHT: ${g('calls_aht')} min`,
+    ``,
+    `💰 *Saves & Cancels*`,
+    `• Cancels: ${g('saves_cancels')}  |  Saved: ${g('saves_saved')}  |  Save Rate: ${gp('saves_rate')}`,
+    ``,
+    `⭐ *Reviews*`,
+    `• Answered: ${g('reviews_answered')}  |  Goal %: ${gp('reviews_goal_pct')}`,
+    ``,
+    `📦 *Returns*`,
+    `• Completed: ${g('returns_completed')}`,
+    ``,
+    `⚖️ *Disputes*`,
+    `• Open: ${g('disputes_open')}  |  Won: ${g('disputes_won')}  |  Lost: ${g('disputes_lost')}  |  Approval: ${gp('disputes_approval')}`,
+    ``,
+    `🔔 *Dunning*`,
+    `• Attempts: ${g('dunning_attempts')}  |  Saves: ${g('dunning_saves')}  |  Save Rate: ${gp('dunning_rate')}`,
+    ``,
+    `📝 *Rowan's Totally Unbiased Analysis*`,
+    ...roastLines,
+  ].join('\n');
+}
+
+function copyRowanReport() {
+  const dt = document.getElementById('entry-date').value;
+  const entry = getCurrentFormEntry();
+  const text = buildRowanText(entry, dt);
+  const url = loadWebhook();
+  const hasWebhook = url && url.startsWith('https://hooks.slack.com/');
+
+  navigator.clipboard.writeText(text).then(async () => {
+    if(hasWebhook) {
+      showSlackConfirm('sending');
+      const ok = await postToSlack(entry, dt);
+      showSlackConfirm(ok ? 'sent' : 'copied');
+    } else {
+      showSlackConfirm('copied');
+    }
+  }).catch(() => {
+    showToast('Copy failed — try saving first', 'red');
+  });
+}
+
+function showSlackConfirm(state) {
+  const existing = document.getElementById('slack-confirm');
+  if(existing) existing.remove();
+
+  const el = document.createElement('div');
+  el.id = 'slack-confirm';
+
+  const states = {
+    sending: { icon: '📤', title: 'Sending to Slack…',   sub: 'Rowan is typing, reluctantly 😤',      color: '#2563eb' },
+    sent:    { icon: '✅', title: 'Sent to Slack!',       sub: 'Rowan has been deployed 💅',            color: '#16a34a' },
+    copied:  { icon: '📋', title: 'Copied to clipboard!', sub: 'Paste into Slack whenever you\'re ready', color: '#16a34a' },
+  };
+  const s = states[state];
+
+  el.style.cssText = `
+    position:fixed;bottom:28px;right:28px;z-index:200;
+    background:#1a1d23;border-radius:14px;padding:16px 18px;
+    display:flex;align-items:center;gap:14px;
+    box-shadow:0 8px 32px rgba(0,0,0,.4);
+    animation:scConfirm .22s ease;min-width:270px;max-width:340px;
+    border-left:4px solid ${s.color};
+  `;
+  el.innerHTML = `
+    <div style="font-size:28px;line-height:1">${s.icon}</div>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px">${s.title}</div>
+      <div style="font-size:12px;color:#9ca3af">${s.sub}</div>
+    </div>
+    <div onclick="this.parentElement.remove()" style="color:#6b7280;font-size:15px;cursor:pointer;padding:2px 4px;flex-shrink:0">✕</div>
+  `;
+
+  if(!document.getElementById('sc-style')) {
+    const style = document.createElement('style');
+    style.id = 'sc-style';
+    style.textContent = `@keyframes scConfirm{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(el);
+  if(state !== 'sending') setTimeout(() => { if(el.parentElement) el.remove(); }, 4500);
+}
+
+function showToast(msg, type='green') {
+  t.textContent=msg;
+  t.style.background = type==='green'?'#16a34a':'#dc2626';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── Tab switch ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['entry','compare','summary'][i]===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='compare') renderCompare();
+  if(name==='summary') renderSummary();
+}
+
+// ── Report Modal ───────────────────────────────────────────────────────────
+function openReportModal(which) {
+  const history = loadHistory();
+  let dt, label;
+  if(which==='yesterday'){ dt=yesterday(); label='Yesterday · '+formatDate(dt); }
+  else { dt=today(); label='Today · '+formatDate(dt); }
+  const entry = history.find(e=>e._date===dt) || (which==='today'?getCurrentFormEntry():null);
+  if(!entry){ showToast('No data for '+formatDate(dt),'red'); return; }
+  renderReportContent(entry, label);
+  document.getElementById('report-backdrop').classList.add('open');
+}
+
+function getCurrentFormEntry() {
+  const e={_date:today()};
+  FIELDS.forEach(f=>{ e[f.id]=document.getElementById(f.id)?.value||''; });
+  return e;
+}
+
+function renderReportContent(entry, titleLabel) {
+  const g = id => { const v=parseFloat(entry[id]); return isNaN(v)?null:v; };
+  const fmt = (v,pct) => v===null?'—':(pct?v.toFixed(1)+'%':(v%1===0?v.toFixed(0):v.toFixed(1)));
+  const card = (label,val,pct,lowerBetter,threshold) => {
+    let cls='rn';
+    if(val!==null && threshold!==undefined && threshold!==null){
+      cls = (lowerBetter?(val<=threshold):(val>=threshold))?'rg':'rr';
+    }
+    return `<div class="report-card"><div class="report-card-label">${label}</div><div class="report-card-val ${cls}">${fmt(val,pct)}</div></div>`;
+  };
+  const sec = (icon,label) => `<div class="report-section-head"><span>${icon}</span>${label}</div>`;
+
+  // Set header title
+  document.getElementById('report-header-title').textContent = 'EOD Report';
+
+  const esla = g('email_sla');
+  const ctot = g('calls_total')!==null?g('calls_total'):(g('calls_inbound')||0)+(g('calls_outbound')||0);
+  const csla = g('calls_sla');
+  const sr   = g('saves_rate')!==null?g('saves_rate'):calcSaveRate(entry);
+  const rgp  = g('reviews_goal_pct')!==null?g('reviews_goal_pct'):calcReviewGoal(entry);
+  const dar  = g('disputes_approval')!==null?g('disputes_approval'):calcDisputeRate(entry);
+  const dr   = g('dunning_rate')!==null?g('dunning_rate'):calcDunningRate(entry);
+
+  document.getElementById('report-content').innerHTML = `
+    <div class="report-date">${titleLabel}</div>
+    ${sec('📧','Email')}
+    <div class="report-grid">
+      ${card('Emails received',g('emails_received'),false,false,undefined)}
+      ${card('Emails resolved',g('emails_resolved'),false,false,undefined)}
+      ${card('Unresolved',g('emails_unresolved'),false,true,0)}
+      ${card('Email SLA %',esla,true,false,90)}
+    </div>
+    ${sec('📞','Calls')}
+    <div class="report-grid">
+      ${card('Total calls',ctot,false,false,undefined)}
+      ${card('Incoming',g('calls_inbound'),false,false,undefined)}
+      ${card('Outgoing',g('calls_outbound'),false,false,undefined)}
+      ${card('Missed (work hrs)',g('calls_missed_work'),false,true,0)}
+      ${card('Missed (after hrs)',g('calls_missed_after'),false,true,0)}
+      ${card('Missed calls worked',g('calls_missed_worked'),false,false,undefined)}
+      ${card('Calls SLA %',csla,true,false,90)}
+      ${card('Avg handle time',g('calls_aht'),false,true,null)}
+    </div>
+    ${sec('⭐','Reviews & Returns')}
+    <div class="report-grid">
+      ${card('Reviews answered',g('reviews_answered'),false,false,undefined)}
+      ${card('Reviews % of goal',rgp,true,false,100)}
+      ${card('Returns completed',g('returns_completed'),false,false,undefined)}
+    </div>
+    ${sec('💰','Saves & Cancels')}
+    <div class="report-grid">
+      ${card('Cancels',g('saves_cancels'),false,true,0)}
+      ${card('Saved sales',g('saves_saved'),false,false,undefined)}
+      ${card('Save rate',sr,true,false,50)}
+    </div>
+    ${sec('⚖️','Disputes')}
+    <div class="report-grid">
+      ${card('Open',g('disputes_open'),false,true,0)}
+      ${card('Lost',g('disputes_lost'),false,true,0)}
+      ${card('Won',g('disputes_won'),false,false,undefined)}
+      ${card('Approval rate',dar,true,false,60)}
+    </div>
+    ${sec('🔔','Dunning')}
+    <div class="report-grid">
+      ${card('Total worked',g('dunning_attempts'),false,false,undefined)}
+      ${card('Saved',g('dunning_saves'),false,false,undefined)}
+      ${card('Save rate',dr,true,false,80)}
+    </div>
+    <div class="report-footer">CS DAILY TRACKER &nbsp;·&nbsp; ${titleLabel.toUpperCase()} &nbsp;·&nbsp; GENERATED ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+  `;
+}
+
+function calcEmailSLA(e){ const r=parseFloat(e.emails_received),s=parseFloat(e.emails_resolved); return r>0?Math.min(100,s/r*100):null; }
+function calcCallsSLA(e){ const t=(parseFloat(e.calls_inbound)||0)+(parseFloat(e.calls_outbound)||0),m=parseFloat(e.calls_missed_work)||0; return t>0?Math.max(0,(t-m)/t*100):null; }
+function calcSaveRate(e){ const c=parseFloat(e.saves_cancels),s=parseFloat(e.saves_saved); return c>0?s/c*100:null; }
+function calcReviewGoal(e){ const r=parseFloat(e.reviews_answered),g=loadGoal(); return r>0&&g>0?r/g*100:null; }
+function calcDisputeRate(e){ const w=parseFloat(e.disputes_won)||0,l=parseFloat(e.disputes_lost)||0; return (w+l)>0?w/(w+l)*100:null; }
+function calcDunningRate(e){ const a=parseFloat(e.dunning_attempts),s=parseFloat(e.dunning_saves); return a>0?s/a*100:null; }
+
+function closeReport() { document.getElementById('report-backdrop').classList.remove('open'); }
+
+// ── Compare Tab ────────────────────────────────────────────────────────────
+function renderCompare() {
+  const history = loadHistory();
+  const dateA = document.getElementById('cmp-a').value;
+  const dateB = document.getElementById('cmp-b').value;
+  const eA = history.find(e=>e._date===dateA)||{};
+  const eB = history.find(e=>e._date===dateB)||{};
+
+  function colHTML(entry, other, dateStr) {
+    if(!dateStr) return '<div style="padding:16px;color:var(--muted);font-size:13px">Select a date</div>';
+    let html = '';
+    let lastSection = '';
+    FIELDS.forEach(f => {
+      if(f.section!==lastSection){ html+=`<div style="padding:6px 14px;font-size:10px;font-weight:600;color:var(--muted);background:var(--surface2);text-transform:uppercase;letter-spacing:.05em">${f.section}</div>`; lastSection=f.section; }
+      const v = parseFloat(entry[f.id]);
+      const vo = parseFloat(other[f.id]);
+      const display = isNaN(v)?'—':(f.pct?v.toFixed(1)+'%':(v%1===0?v.toFixed(0):v.toFixed(1))+(f.suffix||''));
+      let diff = '';
+      if(!isNaN(v)&&!isNaN(vo)&&v!==vo){
+        const delta=(v-vo);
+        const better = f.lowerIsBetter ? delta<0 : delta>0;
+        diff=`<span class="${better?'diff-up':'diff-dn'}">${delta>0?'+':''}${delta%1===0?delta.toFixed(0):delta.toFixed(1)}${f.pct?'%':''}</span>`;
+      }
+      html+=`<div class="compare-item"><span class="compare-label">${f.label}</span><span class="compare-val">${display}${diff}</span></div>`;
+    });
+    return html||'<div style="padding:16px;color:var(--muted);font-size:13px">No data for this date</div>';
+  }
+  document.getElementById('cmp-col-a').innerHTML = colHTML(eA,eB,dateA);
+  document.getElementById('cmp-col-b').innerHTML = colHTML(eB,eA,dateB);
+}
+
+// ── Summary Tab ────────────────────────────────────────────────────────────
+function setPeriod(p) {
+  currentPeriod=p;
+  document.querySelectorAll('.period-pill').forEach((el,i)=>el.classList.toggle('active',['week','month','year','all'][i]===p));
+  renderSummary();
+}
+
+function getPeriodEntries() {
+  const history = loadHistory();
+  const now = new Date(); now.setHours(0,0,0,0);
+  let cutoff = null;
+  if(currentPeriod==='week'){ cutoff=new Date(now); cutoff.setDate(now.getDate()-now.getDay()); }
+  else if(currentPeriod==='month'){ cutoff=new Date(now.getFullYear(),now.getMonth(),1); }
+  else if(currentPeriod==='year'){ cutoff=new Date(now.getFullYear(),0,1); }
+  if(!cutoff) return history;
+  const cutStr = cutoff.toISOString().slice(0,10);
+  return history.filter(e=>e._date>=cutStr);
+}
+
+function renderSummary() {
+  const entries = getPeriodEntries();
+  // Stats cards
+  document.getElementById('summary-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-card-val">${entries.length}</div><div class="stat-card-label">Days tracked</div></div>
+    <div class="stat-card"><div class="stat-card-val">${entries.reduce((a,e)=>a+(parseFloat(e.emails_resolved)||0),0)}</div><div class="stat-card-label">Emails Resolved</div></div>
+    <div class="stat-card"><div class="stat-card-val">${entries.reduce((a,e)=>a+(parseFloat(e.calls_inbound)||0)+(parseFloat(e.calls_outbound)||0),0)}</div><div class="stat-card-label">Total Calls</div></div>
+    <div class="stat-card"><div class="stat-card-val">${entries.reduce((a,e)=>a+(parseFloat(e.saves_saved)||0),0)}</div><div class="stat-card-label">Saved Sales</div></div>
+    <div class="stat-card"><div class="stat-card-val">${entries.reduce((a,e)=>a+(parseFloat(e.reviews_answered)||0),0)}</div><div class="stat-card-label">Reviews Answered</div></div>
+    <div class="stat-card"><div class="stat-card-val">${entries.reduce((a,e)=>a+(parseFloat(e.returns_completed)||0),0)}</div><div class="stat-card-label">Returns</div></div>
+  `;
+  if(!entries.length){ document.getElementById('summary-table').innerHTML='<div style="padding:20px;color:var(--muted);text-align:center">No data for this period</div>'; return; }
+  // Table
+  const manualFields = FIELDS.filter(f=>!f.auto);
+  let th='<tr><th>Metric</th><th>Total</th><th>Avg/Day</th><th>Min</th><th>Max</th></tr>';
+  let rows=manualFields.map(f=>{
+    const vals=entries.map(e=>parseFloat(e[f.id])).filter(v=>!isNaN(v));
+    if(!vals.length) return `<tr><td>${f.label}</td><td colspan="4" style="color:var(--hint);text-align:center">—</td></tr>`;
+    const tot=vals.reduce((a,b)=>a+b,0),avg=tot/vals.length,mn=Math.min(...vals),mx=Math.max(...vals);
+    const fmt=v=>f.pct?v.toFixed(1)+'%':(v%1===0?v.toFixed(0):v.toFixed(1));
+    return `<tr><td style="color:var(--muted)">${f.label}</td><td>${fmt(tot)}</td><td>${fmt(avg)}</td><td>${fmt(mn)}</td><td>${fmt(mx)}</td></tr>`;
+  }).join('');
+  document.getElementById('summary-table').innerHTML=`<table><thead>${th}</thead><tbody>${rows}</tbody></table>`;
+}
+
+function openSummaryReport() {
+  const entries = getPeriodEntries();
+  if(!entries.length){ showToast('No data for this period','red'); return; }
+  // Aggregate
+  const agg={};
+  FIELDS.filter(f=>!f.auto).forEach(f=>{
+    const vals=entries.map(e=>parseFloat(e[f.id])).filter(v=>!isNaN(v));
+    agg[f.id] = vals.length ? vals.reduce((a,b)=>a+b,0) : null;
+  });
+  // Recalc autos from aggregates
+  const g=id=>agg[id]||0;
+  agg.email_sla = g('emails_received')>0?Math.min(100,g('emails_resolved')/g('emails_received')*100):null;
+  agg.calls_total = g('calls_inbound')+g('calls_outbound')||null;
+  agg.calls_sla = (agg.calls_total||0)>0?Math.max(0,((agg.calls_total)-g('calls_missed_work'))/agg.calls_total*100):null;
+  agg.saves_rate = g('saves_cancels')>0?g('saves_saved')/g('saves_cancels')*100:null;
+  agg.reviews_goal_pct = g('reviews_answered')>0&&loadGoal()>0?g('reviews_answered')/(loadGoal()*entries.length)*100:null;
+  agg.disputes_approval = (g('disputes_won')+g('disputes_lost'))>0?g('disputes_won')/(g('disputes_won')+g('disputes_lost'))*100:null;
+  agg.dunning_rate = g('dunning_attempts')>0?g('dunning_saves')/g('dunning_attempts')*100:null;
+
+  const periodLabels={'week':'This Week','month':'This Month','year':'This Year','all':'All Time'};
+  const dateRange = entries.length>1?`${formatDate(entries[0]._date)} – ${formatDate(entries[entries.length-1]._date)}`:formatDate(entries[0]._date);
+  renderReportContent(agg, `${periodLabels[currentPeriod]} · ${dateRange} · ${entries.length} days`);
+  document.getElementById('report-backdrop').classList.add('open');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.getElementById('entry-date').value = today();
+document.getElementById('review-goal-input').value = loadGoal();
+const savedWebhook = loadWebhook();
+document.getElementById('slack-webhook-input').value = savedWebhook;
+updateWebhookStatus(savedWebhook);
+// Set compare defaults
+const cmpA=document.getElementById('cmp-a'); cmpA.value=yesterday();
+const cmpB=document.getElementById('cmp-b'); cmpB.value=today();
+recalcAuto();
+updateAvgs();
+</script>
+</body>
+</html>
