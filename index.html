@@ -527,7 +527,7 @@ function loadEntryForDate(dt) {
 }
 
 // ── Save / Clear / Undo ────────────────────────────────────────────────────
-function saveEntry() {
+async function saveEntry() {
   const dt = document.getElementById('entry-date').value;
   const history = loadHistory();
   undoSnapshot = JSON.parse(JSON.stringify(history));
@@ -542,6 +542,13 @@ function saveEntry() {
   updateAvgs();
   showToast('Saved for '+formatDate(dt),'green');
   if(currentPeriod) renderSummary();
+  // Auto-post to Slack on save
+  const webhookUrl = loadWebhook();
+  if(webhookUrl && webhookUrl.startsWith('https://hooks.slack.com/')) {
+    showSlackConfirm('sending');
+    const ok = await postToSlack(entry, dt);
+    showSlackConfirm(ok ? 'sent' : 'copied');
+  }
 }
 
 function clearForm(resetDate=true) {
