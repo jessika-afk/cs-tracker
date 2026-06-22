@@ -777,6 +777,8 @@ function showSlackConfirm(state) {
 }
 
 function showToast(msg, type='green') {
+  const t = document.getElementById('toast');
+  if(!t) return;
   t.textContent=msg;
   t.style.background = type==='green'?'#16a34a':'#dc2626';
   t.classList.add('show');
