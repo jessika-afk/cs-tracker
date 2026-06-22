@@ -992,9 +992,11 @@ function openSummaryReport() {
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
+const DEFAULT_WEBHOOK = 'https://hooks.slack.com/triggers/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';
 document.getElementById('entry-date').value = today();
 document.getElementById('review-goal-input').value = loadGoal();
-const savedWebhook = loadWebhook();
+let savedWebhook = loadWebhook();
+if(!savedWebhook) { savedWebhook = DEFAULT_WEBHOOK; localStorage.setItem('cs_slack_webhook', savedWebhook); }
 document.getElementById('slack-webhook-input').value = savedWebhook;
 updateWebhookStatus(savedWebhook);
 // Set compare defaults
