@@ -208,13 +208,13 @@ button:hover{opacity:.85}
       <div class="metric-avg avg-neutral" id="avg_calls_missed_after">—</div>
     </div>
     <div class="metric-row">
-      <div><div class="metric-label">Missed Calls Worked</div><div class="metric-sub">Not included in SLA</div></div>
+      <div><div class="metric-label">Missed Calls Worked</div><div class="metric-sub">Counted back into SLA</div></div>
       <input class="metric-input" type="number" id="calls_missed_worked" oninput="onInput('calls_missed_worked')">
       <div class="metric-avg avg-neutral" id="avg_calls_missed_worked">—</div>
     </div>
     <div class="metric-row">
-      <div><div class="metric-label">Calls SLA %</div><div class="metric-sub">From RingCentral</div></div>
-      <input class="metric-input" type="number" id="calls_sla" oninput="onInput('calls_sla')">
+      <div><div class="metric-label">Calls SLA %</div><div class="metric-sub">Auto-calculated</div></div>
+      <input class="metric-input" type="number" id="calls_sla" readonly>
       <div class="metric-avg avg-neutral" id="avg_calls_sla">—</div>
     </div>
     <div class="metric-row">
@@ -384,7 +384,7 @@ const FIELDS = [
   {id:'calls_missed_work',label:'Missed (Work Hrs)',section:'Calls',lowerIsBetter:true},
   {id:'calls_missed_after',label:'Missed (After Hrs)',section:'Calls',lowerIsBetter:true},
   {id:'calls_missed_worked',label:'Missed Calls Worked',section:'Calls',lowerIsBetter:false},
-  {id:'calls_sla',label:'Calls SLA %',section:'Calls',lowerIsBetter:false,pct:true},
+  {id:'calls_sla',label:'Calls SLA %',section:'Calls',lowerIsBetter:false,pct:true,auto:true},
   {id:'calls_aht',label:'Avg Handle Time',section:'Calls',lowerIsBetter:true,suffix:' min'},
   {id:'saves_cancels',label:'Cancellations',section:'Saves',lowerIsBetter:true},
   {id:'saves_saved',label:'Saved Sales',section:'Saves',lowerIsBetter:false},
@@ -434,6 +434,11 @@ function recalcAuto() {
   const inb=g('calls_inbound'), out=g('calls_outbound');
   const tot = (inb||out) ? inb+out : null;
   setReadonly('calls_total', tot);
+
+  // Calls SLA: (Total - Missed Work - Missed After + Missed Worked) / Total × 100
+  const mw=g('calls_missed_work'), ma=g('calls_missed_after'), mwk=g('calls_missed_worked');
+  const csla = (tot&&tot>0) ? Math.max(0, Math.min(100, (tot - mw - ma + mwk) / tot * 100)) : null;
+  setReadonly('calls_sla', csla, '%');
 
   // Save rate
   const canc=g('saves_cancels'), saved=g('saves_saved');
@@ -888,7 +893,7 @@ function renderReportContent(entry, titleLabel) {
 }
 
 function calcEmailSLA(e){ const r=parseFloat(e.emails_received),s=parseFloat(e.emails_resolved); return r>0?Math.min(100,s/r*100):null; }
-function calcCallsSLA(e){ const t=(parseFloat(e.calls_inbound)||0)+(parseFloat(e.calls_outbound)||0),m=parseFloat(e.calls_missed_work)||0; return t>0?Math.max(0,(t-m)/t*100):null; }
+function calcCallsSLA(e){ const t=(parseFloat(e.calls_inbound)||0)+(parseFloat(e.calls_outbound)||0),mw=parseFloat(e.calls_missed_work)||0,ma=parseFloat(e.calls_missed_after)||0,mwk=parseFloat(e.calls_missed_worked)||0; return t>0?Math.max(0,Math.min(100,(t-mw-ma+mwk)/t*100)):null; }
 function calcSaveRate(e){ const c=parseFloat(e.saves_cancels),s=parseFloat(e.saves_saved); return c>0?s/c*100:null; }
 function calcReviewGoal(e){ const r=parseFloat(e.reviews_answered),g=loadGoal(); return r>0&&g>0?r/g*100:null; }
 function calcDisputeRate(e){ const w=parseFloat(e.disputes_won)||0,l=parseFloat(e.disputes_lost)||0; return (w+l)>0?w/(w+l)*100:null; }
@@ -984,7 +989,7 @@ function openSummaryReport() {
   const g=id=>agg[id]||0;
   agg.email_sla = g('emails_received')>0?Math.min(100,g('emails_resolved')/g('emails_received')*100):null;
   agg.calls_total = g('calls_inbound')+g('calls_outbound')||null;
-  agg.calls_sla = (agg.calls_total||0)>0?Math.max(0,((agg.calls_total)-g('calls_missed_work'))/agg.calls_total*100):null;
+  agg.calls_sla = (agg.calls_total||0)>0?Math.max(0,Math.min(100,(agg.calls_total-g('calls_missed_work')-g('calls_missed_after')+g('calls_missed_worked'))/agg.calls_total*100)):null;
   agg.saves_rate = g('saves_cancels')>0?g('saves_saved')/g('saves_cancels')*100:null;
   agg.reviews_goal_pct = g('reviews_answered')>0&&loadGoal()>0?g('reviews_answered')/(loadGoal()*entries.length)*100:null;
   agg.disputes_approval = (g('disputes_won')+g('disputes_lost'))>0?g('disputes_won')/(g('disputes_won')+g('disputes_lost'))*100:null;
