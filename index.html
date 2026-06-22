@@ -590,9 +590,12 @@ async function postToSlack(entry, dt) {
   if(!url || !url.startsWith('https://hooks.slack.com/')) return false;
   const text = buildRowanText(entry, dt);
   try {
+    // mode: 'no-cors' avoids CORS preflight; text/plain keeps it a "simple" request.
+    // Slack Workflow triggers parse the JSON body regardless of Content-Type.
     await fetch(url, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain'},
       body: JSON.stringify({ report_text: text })
     });
     return true;
