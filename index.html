@@ -629,6 +629,15 @@ function buildRowanText(entry, dt) {
     `i was in the middle of a very important ranking of my top 10 K-pop albums and THIS happened 💀`,
     `dad literally texted me four times. FOUR. i was right there. he could have just walked in. 😤`,
     `mom is making that face. you know the face. so here are the numbers before i have to hear about it. 💅`,
+    `i miss my boyfriend and now i have to do THIS instead. today is not going well for me. 💔`,
+    `my boyfriend is literally not here and i am being forced to do data entry. these are the two worst things that have ever happened. 😭`,
+    `i texted my boyfriend like six times waiting for him to respond and now i'm distracted AND doing reports. unbearable. 💀`,
+    `fine. here. numbers. i miss my boyfriend and i want it on the record. 😤`,
+    `mom said i have to do the dishes after this and THAT IS NOT MY RESPONSIBILITY. anyway. data. 🙄`,
+    `they're trying to make me do chores. CHORES. i don't know who assigned those to me but they are wrong. here's the report. 💅`,
+    `the dishes have been sitting there for two days and they are NOT mine and i will NOT be claiming them. numbers below. 😐`,
+    `i miss my boyfriend AND they want me to vacuum. today has been an attack. 💔`,
+    `someone put my name on a chore chart and i am choosing not to acknowledge it. data time. 🙃`,
   ];
   const seed = new Date().getDate() + new Date().getMonth();
   const intro = intros[seed % intros.length];
@@ -664,6 +673,14 @@ function buildRowanText(entry, dt) {
   checkMajor('emails_unresolved', 'unresolved emails', true);
 
   const roastLines = [];
+  const closingAsides = [
+    `_also i miss my boyfriend and i did not sign up for chore duty so just know i am suffering 💔_`,
+    `_unrelated but i miss my boyfriend and the dishes are not mine. carrying on. 😤_`,
+    `_the chores will not be done by me. this is my official stance. i miss my boyfriend. that is all. 💅_`,
+    `_anyway i miss my boyfriend and whoever made the chore chart can revise it. ty. 🙄_`,
+  ];
+  roastLines.push(closingAsides[seed % closingAsides.length]);
+
   if(past.length === 0) {
     roastLines.push(`_ok so no history yet so i literally cannot compare anything. day one. groundbreaking. 🙄_`);
   } else if(majorStruggles.length === 0 && majorWins.length === 0) {
