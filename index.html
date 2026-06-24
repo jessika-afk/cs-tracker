@@ -294,26 +294,6 @@ button:hover{opacity:.85}
     </div>
   </div>
 
-  <!-- Dunning -->
-  <div class="section">
-    <div class="section-head"><span class="section-icon">🔔</span> Dunning</div>
-    <div class="metric-row">
-      <div><div class="metric-label">Dunning Attempts</div></div>
-      <input class="metric-input" type="number" id="dunning_attempts" oninput="onInput('dunning_attempts')">
-      <div class="metric-avg avg-neutral" id="avg_dunning_attempts">—</div>
-    </div>
-    <div class="metric-row">
-      <div><div class="metric-label">Dunning Saves</div></div>
-      <input class="metric-input" type="number" id="dunning_saves" oninput="onInput('dunning_saves')">
-      <div class="metric-avg avg-neutral" id="avg_dunning_saves">—</div>
-    </div>
-    <div class="metric-row">
-      <div><div class="metric-label">Dunning Save Rate %</div><div class="metric-sub">Auto-calc · goal ≥ 80%</div></div>
-      <input class="metric-input" type="text" id="dunning_rate" readonly>
-      <div class="metric-avg avg-neutral" id="avg_dunning_rate">—</div>
-    </div>
-  </div>
-
   <div class="actions">
     <button class="btn-primary" onclick="saveEntry()">Save Day</button>
     <button class="btn-secondary" onclick="clearForm()">Clear</button>
@@ -396,9 +376,6 @@ const FIELDS = [
   {id:'disputes_won',label:'Disputes Won',section:'Disputes',lowerIsBetter:false},
   {id:'disputes_lost',label:'Disputes Lost',section:'Disputes',lowerIsBetter:true},
   {id:'disputes_approval',label:'Approval Rate %',section:'Disputes',lowerIsBetter:false,pct:true,auto:true},
-  {id:'dunning_attempts',label:'Dunning Attempts',section:'Dunning',lowerIsBetter:false},
-  {id:'dunning_saves',label:'Dunning Saves',section:'Dunning',lowerIsBetter:false},
-  {id:'dunning_rate',label:'Dunning Save Rate %',section:'Dunning',lowerIsBetter:false,pct:true,auto:true},
 ];
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -463,18 +440,6 @@ function recalcAuto() {
   const dar = (dw+dl)>0 ? dw/(dw+dl)*100 : null;
   setReadonly('disputes_approval', dar, '%');
 
-  // Dunning rate
-  const da=g('dunning_attempts'), ds=g('dunning_saves');
-  const dr = da>0 ? ds/da*100 : null;
-  // Dunning: green if ≥80
-  const drEl = document.getElementById('dunning_rate');
-  if(drEl){
-    drEl.value = dr!==null ? dr.toFixed(1)+'%' : '';
-    if(dr!==null){
-      drEl.style.color = dr>=80 ? 'var(--green)' : 'var(--red)';
-      drEl.style.fontWeight = '600';
-    } else { drEl.style.color=''; drEl.style.fontWeight=''; }
-  }
 }
 
 function setReadonly(id, val, suffix='') {
@@ -669,7 +634,6 @@ function buildRowanText(entry, dt) {
   checkMajor('calls_sla', 'calls SLA', false);
   checkMajor('saves_rate', 'save rate', false);
   checkMajor('disputes_approval', 'dispute approval rate', false);
-  checkMajor('dunning_rate', 'dunning save rate', false);
   checkMajor('emails_unresolved', 'unresolved emails', true);
 
   const roastLines = [];
@@ -730,9 +694,6 @@ function buildRowanText(entry, dt) {
     ``,
     `⚖️ *Disputes*`,
     `• Open: ${g('disputes_open')}  |  Won: ${g('disputes_won')}  |  Lost: ${g('disputes_lost')}  |  Approval: ${gp('disputes_approval')}`,
-    ``,
-    `🔔 *Dunning*`,
-    `• Attempts: ${g('dunning_attempts')}  |  Saves: ${g('dunning_saves')}  |  Save Rate: ${gp('dunning_rate')}`,
     ``,
     `📝 *Rowan's Totally Unbiased Analysis*`,
     ...roastLines,
@@ -858,7 +819,6 @@ function renderReportContent(entry, titleLabel) {
   const sr   = g('saves_rate')!==null?g('saves_rate'):calcSaveRate(entry);
   const rgp  = g('reviews_goal_pct')!==null?g('reviews_goal_pct'):calcReviewGoal(entry);
   const dar  = g('disputes_approval')!==null?g('disputes_approval'):calcDisputeRate(entry);
-  const dr   = g('dunning_rate')!==null?g('dunning_rate'):calcDunningRate(entry);
 
   document.getElementById('report-content').innerHTML = `
     <div class="report-date">${titleLabel}</div>
@@ -899,12 +859,6 @@ function renderReportContent(entry, titleLabel) {
       ${card('Won',g('disputes_won'),false,false,undefined)}
       ${card('Approval rate',dar,true,false,60)}
     </div>
-    ${sec('🔔','Dunning')}
-    <div class="report-grid">
-      ${card('Total worked',g('dunning_attempts'),false,false,undefined)}
-      ${card('Saved',g('dunning_saves'),false,false,undefined)}
-      ${card('Save rate',dr,true,false,80)}
-    </div>
     <div class="report-footer">CS DAILY TRACKER &nbsp;·&nbsp; ${titleLabel.toUpperCase()} &nbsp;·&nbsp; GENERATED ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
   `;
 }
@@ -914,7 +868,6 @@ function calcCallsSLA(e){ const t=(parseFloat(e.calls_inbound)||0)+(parseFloat(e
 function calcSaveRate(e){ const c=parseFloat(e.saves_cancels),s=parseFloat(e.saves_saved); return c>0?s/c*100:null; }
 function calcReviewGoal(e){ const r=parseFloat(e.reviews_answered),g=loadGoal(); return r>0&&g>0?r/g*100:null; }
 function calcDisputeRate(e){ const w=parseFloat(e.disputes_won)||0,l=parseFloat(e.disputes_lost)||0; return (w+l)>0?w/(w+l)*100:null; }
-function calcDunningRate(e){ const a=parseFloat(e.dunning_attempts),s=parseFloat(e.dunning_saves); return a>0?s/a*100:null; }
 
 function closeReport() { document.getElementById('report-backdrop').classList.remove('open'); }
 
@@ -1010,7 +963,6 @@ function openSummaryReport() {
   agg.saves_rate = g('saves_cancels')>0?g('saves_saved')/g('saves_cancels')*100:null;
   agg.reviews_goal_pct = g('reviews_answered')>0&&loadGoal()>0?g('reviews_answered')/(loadGoal()*entries.length)*100:null;
   agg.disputes_approval = (g('disputes_won')+g('disputes_lost'))>0?g('disputes_won')/(g('disputes_won')+g('disputes_lost'))*100:null;
-  agg.dunning_rate = g('dunning_attempts')>0?g('dunning_saves')/g('dunning_attempts')*100:null;
 
   const periodLabels={'week':'This Week','month':'This Month','year':'This Year','all':'All Time'};
   const dateRange = entries.length>1?`${formatDate(entries[0]._date)} – ${formatDate(entries[entries.length-1]._date)}`:formatDate(entries[0]._date);
