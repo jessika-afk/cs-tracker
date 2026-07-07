@@ -577,104 +577,9 @@ async function postToSlack(entry, dt) {
 function buildRowanText(entry, dt) {
   const g = id => { const v=parseFloat(entry[id]); return isNaN(v)?'—':(v%1===0?v.toFixed(0):v.toFixed(1)); };
   const gp = id => { const v=parseFloat(entry[id]); return isNaN(v)?'—':v.toFixed(1)+'%'; };
-  const intros = [
-    `dad is literally standing over my shoulder so here. numbers. you're welcome. 🙄`,
-    `i was in the middle of a really good ATEEZ video and had to pause it for THIS 😤`,
-    `i don't even get paid enough for this. actually i don't get paid at all. dad owes me so bad 💀`,
-    `my bed was calling me and i had to ignore it. for you people. hope you're happy 😐`,
-    `i was literally about to learn a new chord and now i have to do a report like some kind of adult 🎸`,
-    `stray kids dropped a new video today and i am being forced to do data entry instead of watching it 😭`,
-    `dad said "it'll take five minutes" IT HAS NEVER TAKEN FIVE MINUTES 🙃`,
-    `i could be horizontal right now. literally just lying there. living my best life. but no. 💅`,
-    `my phone was at 4% and i had to plug it in to send this. the sacrifices i make 😩`,
-    `mom is sitting right here watching me do this like it's a school project. it is not a school project. 😐`,
-    `fine. FINE. here are your little numbers. i hope they bring you joy because they bring me nothing. 🙄`,
-    `dad took the wifi password hostage again so here we are. doing capitalism. 😤`,
-    `mom told me to "use my time productively" so apparently this counts. ok. sure. 🙃`,
-    `i was in the middle of a very important ranking of my top 10 K-pop albums and THIS happened 💀`,
-    `dad literally texted me four times. FOUR. i was right there. he could have just walked in. 😤`,
-    `mom is making that face. you know the face. so here are the numbers before i have to hear about it. 💅`,
-    `i miss my boyfriend and now i have to do THIS instead. today is not going well for me. 💔`,
-    `my boyfriend is literally not here and i am being forced to do data entry. these are the two worst things that have ever happened. 😭`,
-    `i texted my boyfriend like six times waiting for him to respond and now i'm distracted AND doing reports. unbearable. 💀`,
-    `fine. here. numbers. i miss my boyfriend and i want it on the record. 😤`,
-    `mom said i have to do the dishes after this and THAT IS NOT MY RESPONSIBILITY. anyway. data. 🙄`,
-    `they're trying to make me do chores. CHORES. i don't know who assigned those to me but they are wrong. here's the report. 💅`,
-    `the dishes have been sitting there for two days and they are NOT mine and i will NOT be claiming them. numbers below. 😐`,
-    `i miss my boyfriend AND they want me to vacuum. today has been an attack. 💔`,
-    `someone put my name on a chore chart and i am choosing not to acknowledge it. data time. 🙃`,
-  ];
-  const seed = new Date().getDate() + new Date().getMonth();
-  const intro = intros[seed % intros.length];
-
-  // Build roast based on comparison to historical averages
-  const history = loadHistory();
-  const past = history.filter(e => e._date !== dt);
-  const avg = id => {
-    const vals = past.map(e => parseFloat(e[id])).filter(v => !isNaN(v));
-    return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
-  };
-
-  // Only flag things that are significantly off (>10% worse than avg) or notably good (>10% better)
-  const majorStruggles = [];
-  const majorWins = [];
-
-  const checkMajor = (id, label, lowerIsBetter) => {
-    const cur = parseFloat(entry[id]);
-    const a = avg(id);
-    if(isNaN(cur) || a === null || a === 0) return;
-    const diff = (cur - a) / a; // positive = higher than avg
-    const significantlyWorse = lowerIsBetter ? diff > 0.10 : diff < -0.10;
-    const significantlyBetter = lowerIsBetter ? diff < -0.10 : diff > 0.10;
-    if(significantlyWorse) majorStruggles.push(label);
-    else if(significantlyBetter) majorWins.push(label);
-  };
-
-  checkMajor('email_sla', 'email SLA', false);
-  checkMajor('calls_sla', 'calls SLA', false);
-  checkMajor('saves_rate', 'save rate', false);
-  checkMajor('disputes_approval', 'dispute approval rate', false);
-  checkMajor('emails_unresolved', 'unresolved emails', true);
-
-  const roastLines = [];
-  const closingAsides = [
-    `_also i miss my boyfriend and i did not sign up for chore duty so just know i am suffering 💔_`,
-    `_unrelated but i miss my boyfriend and the dishes are not mine. carrying on. 😤_`,
-    `_the chores will not be done by me. this is my official stance. i miss my boyfriend. that is all. 💅_`,
-    `_anyway i miss my boyfriend and whoever made the chore chart can revise it. ty. 🙄_`,
-  ];
-  roastLines.push(closingAsides[seed % closingAsides.length]);
-
-  if(past.length === 0) {
-    roastLines.push(`_ok so no history yet so i literally cannot compare anything. day one. groundbreaking. 🙄_`);
-  } else if(majorStruggles.length === 0 && majorWins.length === 0) {
-    roastLines.push(`_tbh nothing is like majorly off today?? basically average across the board which is fine i guess 😐_`);
-  } else {
-    if(majorStruggles.length > 0) {
-      const list = majorStruggles.join(' + ');
-      const roasts = [
-        `_ok real talk ${list} is down bad rn like noticeably worse than usual… we should prob fix that 😬_`,
-        `_not to be that girl but ${list} is giving below average vibes and it's not cute 💀_`,
-        `_${list} needs to log off and think abt what it's done bc that's not it 😤_`,
-        `_just gonna say it… ${list} flopped today. like compared to normal. just flopped. 🙃_`,
-        `_someone needs to have a talk w ${list} bc the numbers are not it rn 😩_`,
-      ];
-      roastLines.push(roasts[seed % roasts.length]);
-    }
-    if(majorWins.length > 0) {
-      const list = majorWins.join(' + ');
-      const cheers = [
-        `_ngl ${list} actually went off today?? above average fr fr 💅_`,
-        `_ok ${list} said let's go and honestly respect. above avg. i see u 🌟_`,
-        `_${list} ate today no notes. better than usual and we love that for us ✨_`,
-      ];
-      roastLines.push(cheers[seed % cheers.length]);
-    }
-  }
 
   return [
-    `📊 *CS Daily Report — ${formatDate(dt)}* 💁‍♀️  _from Rowan, reluctantly_`,
-    `${intro}`,
+    `📊 *CS Daily Report — ${formatDate(dt)}*`,
     ``,
     `📧 *Email*`,
     `• Received: ${g('emails_received')}  |  Resolved: ${g('emails_resolved')}  |  Unresolved: ${g('emails_unresolved')}  |  SLA: ${gp('email_sla')}`,
@@ -694,11 +599,9 @@ function buildRowanText(entry, dt) {
     ``,
     `⚖️ *Disputes*`,
     `• Open: ${g('disputes_open')}  |  Won: ${g('disputes_won')}  |  Lost: ${g('disputes_lost')}  |  Approval: ${gp('disputes_approval')}`,
-    ``,
-    `📝 *Rowan's Totally Unbiased Analysis*`,
-    ...roastLines,
   ].join('\n');
 }
+
 
 function copyRowanReport() {
   const dt = document.getElementById('entry-date').value;
