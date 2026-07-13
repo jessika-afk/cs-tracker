@@ -579,26 +579,12 @@ function buildRowanText(entry, dt) {
   const gp = id => { const v=parseFloat(entry[id]); return isNaN(v)?'—':v.toFixed(1)+'%'; };
 
   return [
-    `📊 *CS Daily Report — ${formatDate(dt)}*`,
-    ``,
-    `📧 *Email*`,
-    `• Received: ${g('emails_received')}  |  Resolved: ${g('emails_resolved')}  |  Unresolved: ${g('emails_unresolved')}  |  SLA: ${gp('email_sla')}`,
-    ``,
-    `📞 *Calls*`,
-    `• Inbound: ${g('calls_inbound')}  |  Outbound: ${g('calls_outbound')}  |  Total: ${g('calls_total')}  |  SLA: ${gp('calls_sla')}`,
-    `• Missed (Work): ${g('calls_missed_work')}  |  Missed (After): ${g('calls_missed_after')}  |  Missed Worked: ${g('calls_missed_worked')}  |  AHT: ${g('calls_aht')} min`,
-    ``,
-    `💰 *Saves & Cancels*`,
-    `• Cancels: ${g('saves_cancels')}  |  Saved: ${g('saves_saved')}  |  Save Rate: ${gp('saves_rate')}`,
-    ``,
-    `⭐ *Reviews*`,
-    `• Answered: ${g('reviews_answered')}  |  Goal %: ${gp('reviews_goal_pct')}`,
-    ``,
-    `📦 *Returns*`,
-    `• Completed: ${g('returns_completed')}`,
-    ``,
-    `⚖️ *Disputes*`,
-    `• Open: ${g('disputes_open')}  |  Won: ${g('disputes_won')}  |  Lost: ${g('disputes_lost')}  |  Approval: ${gp('disputes_approval')}`,
+    `📊 *CS EOD — ${formatDate(dt)}*`,
+    `📧 Recv: ${g('emails_received')} | Res: ${g('emails_resolved')} | Unres: ${g('emails_unresolved')} | SLA: ${gp('email_sla')}`,
+    `📞 In: ${g('calls_inbound')} | Out: ${g('calls_outbound')} | Tot: ${g('calls_total')} | SLA: ${gp('calls_sla')} | Missed W: ${g('calls_missed_work')} / AH: ${g('calls_missed_after')} / Worked: ${g('calls_missed_worked')} | AHT: ${g('calls_aht')} min`,
+    `💰 Cancels: ${g('saves_cancels')} | Saved: ${g('saves_saved')} | Rate: ${gp('saves_rate')}`,
+    `⭐ Reviews: ${g('reviews_answered')} | Goal: ${gp('reviews_goal_pct')}  |  📦 Returns: ${g('returns_completed')}`,
+    `⚖️ Open: ${g('disputes_open')} | Won: ${g('disputes_won')} | Lost: ${g('disputes_lost')} | Approval: ${gp('disputes_approval')}`,
   ].join('\n');
 }
 
