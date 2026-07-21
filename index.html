@@ -208,7 +208,7 @@ button:hover{opacity:.85}
       <div class="metric-avg avg-neutral" id="avg_calls_missed_after">—</div>
     </div>
     <div class="metric-row">
-      <div><div class="metric-label">Missed Calls Worked</div><div class="metric-sub">Counted back into SLA</div></div>
+      <div><div class="metric-label">Missed Calls Worked</div><div class="metric-sub">Not included in SLA</div></div>
       <input class="metric-input" type="number" id="calls_missed_worked" oninput="onInput('calls_missed_worked')">
       <div class="metric-avg avg-neutral" id="avg_calls_missed_worked">—</div>
     </div>
@@ -233,9 +233,24 @@ button:hover{opacity:.85}
       <div class="metric-avg avg-neutral" id="avg_saves_cancels">—</div>
     </div>
     <div class="metric-row">
-      <div><div class="metric-label">Saved Sales</div></div>
-      <input class="metric-input" type="number" id="saves_saved" oninput="onInput('saves_saved')">
-      <div class="metric-avg avg-neutral" id="avg_saves_saved">—</div>
+      <div><div class="metric-label">Cross Sales</div></div>
+      <input class="metric-input" type="number" id="saves_cross" oninput="onInput('saves_cross')">
+      <div class="metric-avg avg-neutral" id="avg_saves_cross">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">General Saved Sales</div></div>
+      <input class="metric-input" type="number" id="saves_general" oninput="onInput('saves_general')">
+      <div class="metric-avg avg-neutral" id="avg_saves_general">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Sub Saves</div></div>
+      <input class="metric-input" type="number" id="saves_sub" oninput="onInput('saves_sub')">
+      <div class="metric-avg avg-neutral" id="avg_saves_sub">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">Walk Through Sales</div></div>
+      <input class="metric-input" type="number" id="saves_walkthrough" oninput="onInput('saves_walkthrough')">
+      <div class="metric-avg avg-neutral" id="avg_saves_walkthrough">—</div>
     </div>
     <div class="metric-row">
       <div><div class="metric-label">Save Rate %</div><div class="metric-sub">Auto-calculated</div></div>
@@ -256,6 +271,11 @@ button:hover{opacity:.85}
       <div><div class="metric-label">Reviews Goal %</div><div class="metric-sub">Auto-calculated vs daily goal</div></div>
       <input class="metric-input" type="text" id="reviews_goal_pct" readonly>
       <div class="metric-avg avg-neutral" id="avg_reviews_goal_pct">—</div>
+    </div>
+    <div class="metric-row">
+      <div><div class="metric-label">CSAT Score</div></div>
+      <input class="metric-input" type="number" id="reviews_csat" oninput="onInput('reviews_csat')">
+      <div class="metric-avg avg-neutral" id="avg_reviews_csat">—</div>
     </div>
   </div>
 
@@ -291,6 +311,16 @@ button:hover{opacity:.85}
       <div><div class="metric-label">Approval Rate %</div><div class="metric-sub">Auto-calculated</div></div>
       <input class="metric-input" type="text" id="disputes_approval" readonly>
       <div class="metric-avg avg-neutral" id="avg_disputes_approval">—</div>
+    </div>
+  </div>
+
+  <!-- Web/Dev Issues -->
+  <div class="section">
+    <div class="section-head"><span class="section-icon">🖥️</span> Web / Dev Issues</div>
+    <div class="metric-row">
+      <div><div class="metric-label">Open Issues</div></div>
+      <input class="metric-input" type="number" id="webdev_open" oninput="onInput('webdev_open')">
+      <div class="metric-avg avg-neutral" id="avg_webdev_open">—</div>
     </div>
   </div>
 
@@ -367,15 +397,20 @@ const FIELDS = [
   {id:'calls_sla',label:'Calls SLA %',section:'Calls',lowerIsBetter:false,pct:true,auto:true},
   {id:'calls_aht',label:'Avg Handle Time',section:'Calls',lowerIsBetter:true,suffix:' min'},
   {id:'saves_cancels',label:'Cancellations',section:'Saves',lowerIsBetter:true},
-  {id:'saves_saved',label:'Saved Sales',section:'Saves',lowerIsBetter:false},
+  {id:'saves_cross',label:'Cross Sales',section:'Saves',lowerIsBetter:false},
+  {id:'saves_general',label:'General Saved Sales',section:'Saves',lowerIsBetter:false},
+  {id:'saves_sub',label:'Sub Saves',section:'Saves',lowerIsBetter:false},
+  {id:'saves_walkthrough',label:'Walk Through Sales',section:'Saves',lowerIsBetter:false},
   {id:'saves_rate',label:'Save Rate %',section:'Saves',lowerIsBetter:false,pct:true,auto:true},
   {id:'reviews_answered',label:'Reviews Answered',section:'Reviews',lowerIsBetter:false},
   {id:'reviews_goal_pct',label:'Reviews Goal %',section:'Reviews',lowerIsBetter:false,pct:true,auto:true},
+  {id:'reviews_csat',label:'CSAT Score',section:'Reviews',lowerIsBetter:false},
   {id:'returns_completed',label:'Returns Completed',section:'Returns',lowerIsBetter:false},
   {id:'disputes_open',label:'Disputes Open',section:'Disputes',lowerIsBetter:true},
   {id:'disputes_won',label:'Disputes Won',section:'Disputes',lowerIsBetter:false},
   {id:'disputes_lost',label:'Disputes Lost',section:'Disputes',lowerIsBetter:true},
   {id:'disputes_approval',label:'Approval Rate %',section:'Disputes',lowerIsBetter:false,pct:true,auto:true},
+  {id:'webdev_open',label:'Open Issues',section:'Web/Dev',lowerIsBetter:true},
 ];
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -412,14 +447,13 @@ function recalcAuto() {
   const tot = (inb||out) ? inb+out : null;
   setReadonly('calls_total', tot);
 
-  // Calls SLA: (Total - Missed Work - Missed After + Missed Worked) / Total × 100
-  const mw=g('calls_missed_work'), ma=g('calls_missed_after'), mwk=g('calls_missed_worked');
-  const csla = (tot&&tot>0) ? Math.max(0, Math.min(100, (tot - mw - ma + mwk) / tot * 100)) : null;
+  // Calls SLA — (Inbound − Missed Work Hours) / Inbound * 100
+  const inbound=g('calls_inbound'), missedWork=g('calls_missed_work');
+  const csla = inbound>0 ? Math.max(0,(inbound-missedWork)/inbound*100) : null;
   setReadonly('calls_sla', csla, '%');
-
-  // Save rate
-  const canc=g('saves_cancels'), saved=g('saves_saved');
-  const sr = canc>0 ? saved/canc*100 : null;
+  const canc=g('saves_cancels');
+  const totalSaved=(g('saves_cross')||0)+(g('saves_general')||0)+(g('saves_sub')||0)+(g('saves_walkthrough')||0);
+  const sr = canc>0 ? totalSaved/canc*100 : null;
   setReadonly('saves_rate', sr, '%');
 
   // Reviews goal %
@@ -497,7 +531,7 @@ function loadEntryForDate(dt) {
 }
 
 // ── Save / Clear / Undo ────────────────────────────────────────────────────
-async function saveEntry() {
+function saveEntry() {
   const dt = document.getElementById('entry-date').value;
   const history = loadHistory();
   undoSnapshot = JSON.parse(JSON.stringify(history));
@@ -512,13 +546,6 @@ async function saveEntry() {
   updateAvgs();
   showToast('Saved for '+formatDate(dt),'green');
   if(currentPeriod) renderSummary();
-  // Auto-post to Slack on save
-  const webhookUrl = loadWebhook();
-  if(webhookUrl && webhookUrl.startsWith('https://hooks.slack.com/')) {
-    showSlackConfirm('sending');
-    const ok = await postToSlack(entry, dt);
-    showSlackConfirm(ok ? 'sent' : 'copied');
-  }
 }
 
 function clearForm(resetDate=true) {
@@ -560,12 +587,9 @@ async function postToSlack(entry, dt) {
   if(!url || !url.startsWith('https://hooks.slack.com/')) return false;
   const text = buildRowanText(entry, dt);
   try {
-    // mode: 'no-cors' avoids CORS preflight; text/plain keeps it a "simple" request.
-    // Slack Workflow triggers parse the JSON body regardless of Content-Type.
     await fetch(url, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: {'Content-Type': 'text/plain'},
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ report_text: text })
     });
     return true;
@@ -579,15 +603,31 @@ function buildRowanText(entry, dt) {
   const gp = id => { const v=parseFloat(entry[id]); return isNaN(v)?'—':v.toFixed(1)+'%'; };
 
   return [
-    `📊 *CS EOD — ${formatDate(dt)}*`,
-    `📧 Recv: ${g('emails_received')} | Res: ${g('emails_resolved')} | Unres: ${g('emails_unresolved')} | SLA: ${gp('email_sla')}`,
-    `📞 In: ${g('calls_inbound')} | Out: ${g('calls_outbound')} | Tot: ${g('calls_total')} | SLA: ${gp('calls_sla')} | Missed W: ${g('calls_missed_work')} / AH: ${g('calls_missed_after')} / Worked: ${g('calls_missed_worked')} | AHT: ${g('calls_aht')} min`,
-    `💰 Cancels: ${g('saves_cancels')} | Saved: ${g('saves_saved')} | Rate: ${gp('saves_rate')}`,
-    `⭐ Reviews: ${g('reviews_answered')} | Goal: ${gp('reviews_goal_pct')}  |  📦 Returns: ${g('returns_completed')}`,
-    `⚖️ Open: ${g('disputes_open')} | Won: ${g('disputes_won')} | Lost: ${g('disputes_lost')} | Approval: ${gp('disputes_approval')}`,
+    `📊 *CS Daily Report — ${formatDate(dt)}*`,
+    ``,
+    `📧 *Email*`,
+    `• Received: ${g('emails_received')}  |  Resolved: ${g('emails_resolved')}  |  Unresolved: ${g('emails_unresolved')}  |  SLA: ${gp('email_sla')}`,
+    ``,
+    `📞 *Calls*`,
+    `• Inbound: ${g('calls_inbound')}  |  Outbound: ${g('calls_outbound')}  |  Total: ${g('calls_total')}  |  SLA: ${gp('calls_sla')}`,
+    `• Missed (Work): ${g('calls_missed_work')}  |  Missed (After): ${g('calls_missed_after')}  |  Missed Worked: ${g('calls_missed_worked')}  |  AHT: ${g('calls_aht')} min`,
+    ``,
+    `💰 *Saves & Cancels*`,
+    `• Cancels: ${g('saves_cancels')}  |  Cross Sales: ${g('saves_cross')}  |  General: ${g('saves_general')}  |  Sub Saves: ${g('saves_sub')}  |  Walk Through: ${g('saves_walkthrough')}  |  Save Rate: ${gp('saves_rate')}`,
+    ``,
+    `⭐ *Reviews*`,
+    `• Answered: ${g('reviews_answered')}  |  Goal %: ${gp('reviews_goal_pct')}  |  CSAT: ${g('reviews_csat')}`,
+    ``,
+    `📦 *Returns*`,
+    `• Completed: ${g('returns_completed')}`,
+    ``,
+    `⚖️ *Disputes*`,
+    `• Open: ${g('disputes_open')}  |  Won: ${g('disputes_won')}  |  Lost: ${g('disputes_lost')}  |  Approval: ${gp('disputes_approval')}`,
+    ``,
+    `🖥️ *Web / Dev Issues*`,
+    `• Open Issues: ${g('webdev_open')}`,
   ].join('\n');
 }
-
 
 function copyRowanReport() {
   const dt = document.getElementById('entry-date').value;
@@ -652,8 +692,6 @@ function showSlackConfirm(state) {
 }
 
 function showToast(msg, type='green') {
-  const t = document.getElementById('toast');
-  if(!t) return;
   t.textContent=msg;
   t.style.background = type==='green'?'#16a34a':'#dc2626';
   t.classList.add('show');
@@ -704,7 +742,7 @@ function renderReportContent(entry, titleLabel) {
 
   const esla = g('email_sla');
   const ctot = g('calls_total')!==null?g('calls_total'):(g('calls_inbound')||0)+(g('calls_outbound')||0);
-  const csla = g('calls_sla');
+  const csla = g('calls_sla')!==null?g('calls_sla'):calcCallsSLA(entry);
   const sr   = g('saves_rate')!==null?g('saves_rate'):calcSaveRate(entry);
   const rgp  = g('reviews_goal_pct')!==null?g('reviews_goal_pct'):calcReviewGoal(entry);
   const dar  = g('disputes_approval')!==null?g('disputes_approval'):calcDisputeRate(entry);
@@ -733,12 +771,16 @@ function renderReportContent(entry, titleLabel) {
     <div class="report-grid">
       ${card('Reviews answered',g('reviews_answered'),false,false,undefined)}
       ${card('Reviews % of goal',rgp,true,false,100)}
+      ${card('CSAT Score',g('reviews_csat'),false,false,undefined)}
       ${card('Returns completed',g('returns_completed'),false,false,undefined)}
     </div>
     ${sec('💰','Saves & Cancels')}
     <div class="report-grid">
       ${card('Cancels',g('saves_cancels'),false,true,0)}
-      ${card('Saved sales',g('saves_saved'),false,false,undefined)}
+      ${card('Cross Sales',g('saves_cross'),false,false,undefined)}
+      ${card('General Saved',g('saves_general'),false,false,undefined)}
+      ${card('Sub Saves',g('saves_sub'),false,false,undefined)}
+      ${card('Walk Through',g('saves_walkthrough'),false,false,undefined)}
       ${card('Save rate',sr,true,false,50)}
     </div>
     ${sec('⚖️','Disputes')}
@@ -748,15 +790,20 @@ function renderReportContent(entry, titleLabel) {
       ${card('Won',g('disputes_won'),false,false,undefined)}
       ${card('Approval rate',dar,true,false,60)}
     </div>
+    ${sec('🖥️','Web / Dev Issues')}
+    <div class="report-grid">
+      ${card('Open Issues',g('webdev_open'),false,true,0)}
+    </div>
     <div class="report-footer">CS DAILY TRACKER &nbsp;·&nbsp; ${titleLabel.toUpperCase()} &nbsp;·&nbsp; GENERATED ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
   `;
 }
 
 function calcEmailSLA(e){ const r=parseFloat(e.emails_received),s=parseFloat(e.emails_resolved); return r>0?Math.min(100,s/r*100):null; }
-function calcCallsSLA(e){ const t=(parseFloat(e.calls_inbound)||0)+(parseFloat(e.calls_outbound)||0),mw=parseFloat(e.calls_missed_work)||0,ma=parseFloat(e.calls_missed_after)||0,mwk=parseFloat(e.calls_missed_worked)||0; return t>0?Math.max(0,Math.min(100,(t-mw-ma+mwk)/t*100)):null; }
-function calcSaveRate(e){ const c=parseFloat(e.saves_cancels),s=parseFloat(e.saves_saved); return c>0?s/c*100:null; }
+function calcCallsSLA(e){ const inb=parseFloat(e.calls_inbound),m=parseFloat(e.calls_missed_work)||0; return inb>0?Math.max(0,(inb-m)/inb*100):null; }
+function calcSaveRate(e){ const c=parseFloat(e.saves_cancels); const t=(parseFloat(e.saves_cross)||0)+(parseFloat(e.saves_general)||0)+(parseFloat(e.saves_sub)||0)+(parseFloat(e.saves_walkthrough)||0); return c>0?t/c*100:null; }
 function calcReviewGoal(e){ const r=parseFloat(e.reviews_answered),g=loadGoal(); return r>0&&g>0?r/g*100:null; }
 function calcDisputeRate(e){ const w=parseFloat(e.disputes_won)||0,l=parseFloat(e.disputes_lost)||0; return (w+l)>0?w/(w+l)*100:null; }
+function calcDunningRate(e){ const a=parseFloat(e.dunning_attempts),s=parseFloat(e.dunning_saves); return a>0?s/a*100:null; }
 
 function closeReport() { document.getElementById('report-backdrop').classList.remove('open'); }
 
@@ -848,10 +895,11 @@ function openSummaryReport() {
   const g=id=>agg[id]||0;
   agg.email_sla = g('emails_received')>0?Math.min(100,g('emails_resolved')/g('emails_received')*100):null;
   agg.calls_total = g('calls_inbound')+g('calls_outbound')||null;
-  agg.calls_sla = (agg.calls_total||0)>0?Math.max(0,Math.min(100,(agg.calls_total-g('calls_missed_work')-g('calls_missed_after')+g('calls_missed_worked'))/agg.calls_total*100)):null;
+  agg.calls_sla = (agg.calls_total||0)>0?Math.max(0,((agg.calls_total)-g('calls_missed_work'))/agg.calls_total*100):null;
   agg.saves_rate = g('saves_cancels')>0?g('saves_saved')/g('saves_cancels')*100:null;
   agg.reviews_goal_pct = g('reviews_answered')>0&&loadGoal()>0?g('reviews_answered')/(loadGoal()*entries.length)*100:null;
   agg.disputes_approval = (g('disputes_won')+g('disputes_lost'))>0?g('disputes_won')/(g('disputes_won')+g('disputes_lost'))*100:null;
+  agg.dunning_rate = g('dunning_attempts')>0?g('dunning_saves')/g('dunning_attempts')*100:null;
 
   const periodLabels={'week':'This Week','month':'This Month','year':'This Year','all':'All Time'};
   const dateRange = entries.length>1?`${formatDate(entries[0]._date)} – ${formatDate(entries[entries.length-1]._date)}`:formatDate(entries[0]._date);
@@ -860,11 +908,9 @@ function openSummaryReport() {
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
-const DEFAULT_WEBHOOK = 'https://hooks.slack.com/triggers/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';
 document.getElementById('entry-date').value = today();
 document.getElementById('review-goal-input').value = loadGoal();
-let savedWebhook = loadWebhook();
-if(!savedWebhook) { savedWebhook = DEFAULT_WEBHOOK; localStorage.setItem('cs_slack_webhook', savedWebhook); }
+const savedWebhook = loadWebhook();
 document.getElementById('slack-webhook-input').value = savedWebhook;
 updateWebhookStatus(savedWebhook);
 // Set compare defaults
